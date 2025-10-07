@@ -41,11 +41,61 @@ async function run() {
     const productCollection = client.db("ElectroMart").collection("products");
     const reviewCollection = client.db("ElectroMart").collection("review");
     const orderCollection = client.db("ElectroMart").collection("order");
+    // productCollection_______________
+    app.post("/products", async (req, res) => {
+      const products = req.body;
+      const result = await productCollection.insertOne(products);
+      res.send(result);
+    });
+    app.get("/products", async (req, res) => {
+      const result = await productCollection.find().toArray();
+      res.send(result);
+    });
+    app.get("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await productCollection.findOne(query);
+      res.send(result);
+    });
+    app.put("/products/:id", async (req, res) => {
+      const user = req.body;
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await productCollection.updateOne(query);
+      res.send(result);
+    });
+    app.delete("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await productCollection.deleteOne(query);
+      res.send(result);
+    });
+    // usersCollection_________________
     app.post("/users", async (req, res) => {
       const user = req.body;
+      const query = { email: user.email };
+      const existingUser = await usersCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "user already axisting" });
+      }
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+    app.get("/user/:email", async (req, res) => {
+      const email = { email: req.params.email };
+      const result = await usersCollection.findOne(email);
+      res.send(result);
+    });
+    app.delete('/users/:id',async(req,res)=>{
+      const id = req.params.id;
+      const query= { _id: new ObjectId(id)}
+      const result = await usersCollection.deleteOne(query);
+      res.send(result)
+    })
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
