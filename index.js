@@ -90,7 +90,8 @@ async function run() {
       const result = await usersCollection.findOne(email);
       res.send(result);
     });
-    app.patch("users/admin/:id", async (req, res) => {
+    // users role changed function
+    app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
