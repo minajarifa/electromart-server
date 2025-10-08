@@ -41,6 +41,14 @@ async function run() {
     const productCollection = client.db("ElectroMart").collection("products");
     const reviewCollection = client.db("ElectroMart").collection("review");
     const orderCollection = client.db("ElectroMart").collection("order");
+    // jwt related api
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "3d",
+      });
+      res.send({ token });
+    });
     // productCollection_______________
     app.post("/products", async (req, res) => {
       const products = req.body;
