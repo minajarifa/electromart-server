@@ -18,7 +18,6 @@ app.use(
 );
 
 // middleware
-app.use(cors());
 app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.63qrdth.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 // const uri = `mongodb://localhost:27017`;
@@ -41,14 +40,29 @@ async function run() {
     const productCollection = client.db("ElectroMart").collection("products");
     const reviewCollection = client.db("ElectroMart").collection("review");
     const orderCollection = client.db("ElectroMart").collection("order");
-    // jwt related api
+    // jwt related api________________
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "3d",
+        expiresIn: "3h",
       });
       res.send({ token });
     });
+    // middleware_______________
+    const verifyToken = (req, res, next) => {
+      console.log("inside varify token", req.headers.authorization);
+      if (!req.headers.authorization) {
+        return res.status(401).send({ message: "forbiden access" });
+      }
+      const token = req.headers.authorization.split(" ")[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
+        if (error) {
+          return res.status(401).send({ message: "forbiden access" });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    };
     // productCollection_______________
     app.post("/products", async (req, res) => {
       const products = req.body;
@@ -89,7 +103,8 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyToken, async (req, res) => {
+      console.log(req.headers);
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
