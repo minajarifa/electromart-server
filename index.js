@@ -9,7 +9,6 @@ const {
   MongoClient,
   ServerApiVersion,
   ObjectId,
-  MongoCryptAzureKMSRequestError,
 } = require("mongodb");
 app.use(
   cors({
@@ -53,20 +52,31 @@ async function run() {
       });
       res.send({ token });
     });
-    // middleware_______________
+    // middleware verifyToken_______________
     const verifyToken = (req, res, next) => {
-      console.log("inside varify token", req.headers.authorization);
+      // console.log("inside varify token", req.headers.authorization);
       if (!req.headers.authorization) {
-        return res.status(401).send({ message: "forbiden access" });
+        return res.status(401).send({ message: "Unauthorized access" });
       }
       const token = req.headers.authorization.split(" ")[1];
       jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
         if (error) {
-          return res.status(401).send({ message: "forbiden access" });
+          return res.status(401).send({ message: "Unauthorized access" });
         }
         req.decoded = decoded;
         next();
       });
+    };
+    // use verify admin after verify token
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "forbiden access" });
+      }
+      next()
     };
     // productCollection_______________
     app.post("/products", async (req, res) => {
@@ -98,6 +108,19 @@ async function run() {
       res.send(result);
     });
     // usersCollection_________________
+    app.get("/user/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "forbiden access" });
+      }
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === "admin";
+      }
+      res.send({ admin });
+    });
     app.post("/users", async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
@@ -108,7 +131,7 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
-    app.get("/users", verifyToken, async (req, res) => {
+    app.get("/users", verifyToken,verifyAdmin, async (req, res) => {
       console.log(req.headers);
       const result = await usersCollection.find().toArray();
       res.send(result);
@@ -118,19 +141,7 @@ async function run() {
       const result = await usersCollection.findOne(email);
       res.send(result);
     });
-    app.get("/user/admin/:email", verifyToken, async (req, res) => {
-      const email = req.params.email;
-      if (email !== req.decoded.email) {
-        return res.status(403).send({ message: "Unothorozes access" });
-      }
-      const query = { email: email };
-      const user = await usersCollection.findOne(query);
-      let admin = false;
-      if(user){
-        admin= user?.role==="admin"
-      }
-      res.send({admin})
-    });
+
     // users role changed function
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
