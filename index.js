@@ -5,7 +5,12 @@ const cors = require("cors");
 // const cookieParser = require("cookie-parser");
 const port = process.env.PORT || 5000;
 require("dotenv").config();
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const {
+  MongoClient,
+  ServerApiVersion,
+  ObjectId,
+  MongoCryptAzureKMSRequestError,
+} = require("mongodb");
 app.use(
   cors({
     origin: [
@@ -112,6 +117,19 @@ async function run() {
       const email = { email: req.params.email };
       const result = await usersCollection.findOne(email);
       res.send(result);
+    });
+    app.get("/user/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "Unothorozes access" });
+      }
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      let admin = false;
+      if(user){
+        admin= user?.role==="admin"
+      }
+      res.send({admin})
     });
     // users role changed function
     app.patch("/users/admin/:id", async (req, res) => {
