@@ -5,11 +5,7 @@ const cors = require("cors");
 // const cookieParser = require("cookie-parser");
 const port = process.env.PORT || 5000;
 require("dotenv").config();
-const {
-  MongoClient,
-  ServerApiVersion,
-  ObjectId,
-} = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 app.use(
   cors({
     origin: [
@@ -76,7 +72,7 @@ async function run() {
       if (!isAdmin) {
         return res.status(403).send({ message: "forbiden access" });
       }
-      next()
+      next();
     };
     // productCollection_______________
     app.post("/products", async (req, res) => {
@@ -131,7 +127,7 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
-    app.get("/users", verifyToken,verifyAdmin, async (req, res) => {
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       console.log(req.headers);
       const result = await usersCollection.find().toArray();
       res.send(result);
