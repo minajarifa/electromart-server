@@ -91,10 +91,15 @@ async function run() {
       res.send(result);
     });
     app.put("/products/:id", async (req, res) => {
-      const user = req.body;
+      const product = req.body;
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await productCollection.updateOne(query);
+      const updatedDoc={
+        $set:{
+          ...product,
+        }
+      }
+      const result = await productCollection.updateOne(query,updatedDoc);
       res.send(result);
     });
     app.delete("/products/:id", async (req, res) => {
