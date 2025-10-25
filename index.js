@@ -162,9 +162,11 @@ async function run() {
       const result = await usersCollection.deleteOne(query);
       res.send(result);
     });
-    app.post("/create-payment-intent", async (req, res) => {
+    app.post("/create-payment-intent",verifyAdmin,verifyToken, async (req, res) => {
       const { price } = req.body;
+      console.log(price,"pprice")
       const amount = parseInt(price * 100);
+      console.log(amount,"amount")
       const paymentIntent = await stripe.paymentIntent.create({
         amount: amount,
         currency: "usd",
