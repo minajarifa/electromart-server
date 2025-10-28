@@ -19,7 +19,6 @@ app.use(
   })
 );
 
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.63qrdth.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 // const uri = `mongodb://localhost:27017`;
 
@@ -41,6 +40,7 @@ async function run() {
     const productCollection = client.db("ElectroMart").collection("products");
     const reviewCollection = client.db("ElectroMart").collection("review");
     const orderCollection = client.db("ElectroMart").collection("order");
+    const paymentCollection = client.db("ElectroMart").collection("payment");
     // jwt related api________________
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -162,20 +162,40 @@ async function run() {
       const result = await usersCollection.deleteOne(query);
       res.send(result);
     });
-    app.post("/create-payment-intent",verifyAdmin,verifyToken, async (req, res) => {
-      const { price } = req.body;
-      console.log(price,"pprice")
-      const amount = parseInt(price * 100);
-      console.log(amount,"amount")
-      const paymentIntent = await stripe.paymentIntent.create({
-        amount: amount,
-        currency: "usd",
-        payment_method_types: ["card"],
-      });
-      res.send({
-        clientSecret: paymentIntent.client_secret,
-      });
+    // payment related api start__________________________________
+    app.post(
+      "/create-payment-intent",
+      verifyAdmin,
+      verifyToken,
+      async (req, res) => {
+        const { price } = req.body;
+        console.log(price, "pprice");
+        const amount = parseInt(price * 100);
+        console.log(amount, "amount");
+        const paymentIntent = await stripe.paymentIntent.create({
+          amount: amount,
+          currency: "usd",
+          payment_method_types: ["card"],
+        });
+        res.send({
+          clientSecret: paymentIntent.client_secret,
+        });
+      }
+    );
+
+    app.post("/payment", async(req, res) => {
+      const payment = req.body;
+      const paymentResult = await paymentCollection.insertOne(payment);
+      // carefully delete each item from the cart
+      console.log('payment info',payment);
+      const query =  {_id :  {
+        $in:payment.cartIds.map(id=>new ObjectId(id))
+      }}
+      const deleteResult = await productCollection.deleteMany(query)
+      res.send({paymentResult, deleteResult});
     });
+
+    // payment related api end__________________________________
 
     // await client.db("admin").command({ ping: 1 });
     console.log(
